@@ -6,10 +6,10 @@ def preprocess():
         raw_text = ''.join(file.readlines())
     # remove capital letters
     processed_text = raw_text.lower()
-    # substitute " ’" with " i"
-    processed_text = re.sub(r' ’', ' i', processed_text)
-    # remove punctuation
-    processed_text = re.sub(r'[,.;:\-—?!"’()\[\]«»“‟”\']', '', processed_text)
+    # substitute ’ with '
+    processed_text = re.sub('’', '\'', processed_text)
+    # remove punctuation, but '
+    processed_text = re.sub(r'[,.;:\-—?!"’()\[\]«»“‟”]', '', processed_text)
     # remove cantos' headings
     processed_text = re.sub(r'.* • canto .*', '', processed_text)
     # remove lines' numbers
