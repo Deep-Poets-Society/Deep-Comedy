@@ -61,7 +61,6 @@ def cesura(text, syl_text):
             for j, s in enumerate(syllables):
                 for _ in re.findall(r'<s>.', s):
                     del tonic_accents[j]
-        line_w_cesura = ''
         # cesura lirica
         if tonic_accents[2] and tonic_accents[5] and syllables[3].endswith('<s>'):
             line_w_cesura = '<syl>'.join(syllables[0:4]) + '<syl><c>' + '<syl>'.join(syllables[4:])
@@ -103,7 +102,15 @@ def cesura(text, syl_text):
             line_w_cesura = '<syl>'.join(syllables[0:5]) + '<syl>' + \
                             re.sub(r'<s>(?=.)', r'<s><c>', syllables[5]) + \
                             '<syl>' + '<syl>'.join(syllables[6:])
-        # TODO: special cases (-mente, -zial and non-canonic hendecasyllable)
+        # There are 4 hendecasyllable a maiore where the cesura split a compound word which ends with -mente (3
+        # cases) or -zial (1 case)
+        elif 'mente<s>' == syllables[7] + syllables[8]:
+            line_w_cesura = '<syl>'.join(syllables[0:7]) + '<syl><c>' + '<syl>'.join(syllables[7:])
+        elif 'zial<s>' == syllables[6] +  syllables[7]:
+            line_w_cesura = '<syl'.join(syllables[0:6]) + '<syl><c>' + '<syl>'.join(syllables[6:])
+        # Remaining 7 verses are non-canonical hendecasyllables so they do not have a cesura
+        else:
+            line_w_cesura = re.sub(r'(<start><syl>)|(<end>)', '', syl_line)
         line_w_cesura = '<start><syl>' + line_w_cesura + '<end>'
         syl_lines[i] = line_w_cesura
     return '\n'.join(syl_lines)
