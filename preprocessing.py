@@ -35,6 +35,8 @@ def preprocess():
     y_text = re.sub(r'^ ', '', y_text)
     # generate y_cesura.csv
     y_cesura_text = cesura(x_text, y_text)
+    # re-add S at the beginning of the first syllable of each line
+    y_cesura_text = re.sub(r'\n', '\nS', y_cesura_text)
 
     # save files
     with open('res/X.csv', 'w+', encoding='utf-8') as file:
