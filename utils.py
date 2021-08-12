@@ -11,12 +11,12 @@ def load_dataset():
         X = file.readlines()
     with open('res/y_cesura.csv', 'r+', encoding='utf-8') as file:
         y = file.readlines()
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.03, random_state=42)
-    train = [X_train, y_train]
-    train = tf.data.Dataset.from_tensor_slices(train)
-    val = list(zip(X_val, y_val))
-    val = tf.data.Dataset.from_tensor_slices(val)
-    dataset = {'train': train, 'val': val}
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.02, random_state=42)
+    train = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+    val = tf.data.Dataset.from_tensor_slices((X_val, y_val))
+    test = tf.data.Dataset.from_tensor_slices((X_test, y_test))
+    dataset = {'train': train, 'val': val, 'test': test}
     return dataset
 
 
@@ -99,3 +99,13 @@ def accuracy_function(real, pred):
     accuracies = tf.cast(accuracies, dtype=tf.float32)
     mask = tf.cast(mask, dtype=tf.float32)
     return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
+
+
+if __name__ == '__main__':
+    ds = load_dataset()
+    train = ds['train']
+    val = ds['val']
+    train_batches = train.batch(64)
+    for batch, entries in enumerate(train_batches):
+        print(entries)
+        break
