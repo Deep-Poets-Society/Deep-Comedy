@@ -17,7 +17,7 @@ def add_start_end(ragged, reserved_tokens):
 
 def cleanup_text(reserved_tokens, token_txt):
     # Drop the reserved tokens, except for "[C] and [SYL]".
-    bad_tokens = [re.escape(tok) for tok in reserved_tokens if tok not in ["[C]", "[SYL]"]]
+    bad_tokens = [re.escape(tok) for tok in reserved_tokens if tok not in ["C", "S"]]
     bad_token_re = "|".join(bad_tokens)
 
     bad_cells = tf.strings.regex_full_match(token_txt, bad_token_re)
@@ -25,6 +25,8 @@ def cleanup_text(reserved_tokens, token_txt):
 
     # Join them into strings.
     result = tf.strings.reduce_join(result, separator=' ', axis=-1)
+    result = tf.strings.regex_replace(result, 'C', '$')
+    result = tf.strings.regex_replace(result, 'S', '|')
     return result
 
 
