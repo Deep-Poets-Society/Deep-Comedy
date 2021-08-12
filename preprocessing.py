@@ -129,7 +129,7 @@ def cesura(text, syl_text):
 def create_vocabulary(text):
     y = tf.data.Dataset.from_tensor_slices(text.split('\n'))
     tokenizer_params = dict(lower_case=False)
-    reserved_tokens = ['[START]', '[END]', '[S]', '[SYL]', '[C]']
+    reserved_tokens = ['[START]', '[END]', '[SYL]', '[C]', '##[SYL]', '##[C]']
     vocab_args = dict(
         # The target vocabulary size
         vocab_size=200,

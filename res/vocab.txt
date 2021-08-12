@@ -1,8 +1,9 @@
 [START]
 [END]
-[S]
 [SYL]
 [C]
+##[SYL]
+##[C]
 a
 b
 c
