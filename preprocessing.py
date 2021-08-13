@@ -69,8 +69,16 @@ def cesura(text, syl_text):
     dictionary = pickle.load(open('res/dantes_dictionary.pkl', 'rb'))
     # add entries not present
     dictionary.update({'aegypto': [((0, 3, -1, 0), 'ae|gyp|to', 1)]})
+    # correct some inaccuracy
+    dictionary['gorgoglian'] = [((0, 3, -1, 0), 'gor|go|glian', 1)]
     for word in ['te', 'beati', 'qui', 'neque', 'labïa', 'gloria']:
         dictionary[f'’{word}'] = dictionary[f'‘{word}']
+    proclitic_worlds = ['il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'mi', 'ti', 'ci', 'vi', 'si', 'ne', 'e', 'o', 'ma',
+                        'se', 'di', 'a', 'da', 'in', 'con', 'per', 'tra', 'fra', '‘', '‘l', 'gl‘',
+                        'ch‘', 'm‘', 's‘', 'v‘', 'c‘', 't‘']
+    # also 'che', 'non' and 'su' are usually considered proclitic, but in more than one verse in Dante it is considered
+    # as stressed and determinant for cesura, so is omitted from the list,
+    # like 'o tosco che | per la città del foco' (If. X, 22) 2-4t||8
     text = re.sub(r'(\[START] )|( \[END])', '', text)
     syl_text = re.sub(rf'(\[START]{SYL})|( \[END])', '', syl_text)
     lines = text.split('\n')
@@ -84,7 +92,8 @@ def cesura(text, syl_text):
             num_syl = dictionary[w][0][0][1]
             pos_accent = dictionary[w][0][0][2]
             tonic_accents += [False for _ in range(num_syl)]
-            tonic_accents[pos_accent - 1] = True
+            if w not in proclitic_worlds:
+                tonic_accents[pos_accent - 1] = True
         syllables = syl_line.split(f'{SYL}')
         if '' in syllables:
             syllables.remove('')
@@ -137,9 +146,9 @@ def cesura(text, syl_text):
                             f'{SYL}' + f'{SYL}'.join(syllables[6:])
         # There are 4 hendecasyllable a maiore where the cesura split a compound word which ends with -mente (3
         # cases) or -zial (1 case)
-        elif 'mente ' == syllables[7] + syllables[8]:
+        elif 'mente' in syllables[7] + syllables[8]:
             line_w_cesura = f'{SYL}'.join(syllables[0:7]) + f'{CESURA}' + f'{SYL}'.join(syllables[7:])
-        elif 'zial ' == syllables[6] + syllables[7]:
+        elif 'zial ' in syllables[6] + syllables[7]:
             line_w_cesura = f'{SYL}'.join(syllables[0:6]) + f'{CESURA}' + f'{SYL}'.join(syllables[6:])
         # Remaining 7 verses are non-canonical hendecasyllables so they do not have a cesura
         else:
