@@ -1,11 +1,23 @@
 import re
 import pickle
 import string
+import warnings
 import tensorflow as tf
 from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
 
-CESURA = "C"
-SYL = "S"
+CESURA = " C "
+SPACE = " S "
+SYL = " Y "
+
+
+def remove_useless_spaces(text):
+    # remove multiple spaces
+    processed_text = re.sub(r' +', f' ', text)
+    # remove spaces at the beginning of each line
+    processed_text = re.sub(r'^ ', '', processed_text)
+    processed_text = re.sub(r'\n ', '\n', processed_text)
+    
+    return processed_text
 
 
 def preprocess():
@@ -25,18 +37,20 @@ def preprocess():
     processed_text = re.sub(r'\n+', '\n', processed_text)
     # remove initial and last blank lines
     processed_text = re.sub(r'(^\n)|(\n$)', '', processed_text)
-    # remove multiple spaces and transform spaces in [S]
-    processed_text = re.sub(r' +', ' ', processed_text)
+    # remove multiple spaces and transform spaces in space tag
+    processed_text = re.sub(r' +', f'{SPACE}', processed_text)
 
-    # add <syl> token in y.csv, remove syllabification in X.csv
+    # add syllable token in y.csv, remove syllabification in X.csv
     x_text = re.sub(r'\|', '', processed_text)
-    y_text = re.sub(r'\|', r'S', processed_text)
+    y_text = re.sub(r'\|', f'{SYL}', processed_text)
     # remove spaces at the beginning of each line in y.csv
     y_text = re.sub(r'^ ', '', y_text)
     # generate y_cesura.csv
     y_cesura_text = cesura(x_text, y_text)
-    # re-add S at the beginning of the first syllable of each line
-    y_cesura_text = re.sub(r'\n', '\nS', y_cesura_text)
+    # re-add syllable tag the beginning of the first syllable of each line
+    y_cesura_text = re.sub(r'\n', f'\n{SYL}', y_cesura_text)
+    # add an initial space which is lost in the process:
+    y_cesura_text = ' ' + y_cesura_text
 
     # save files
     with open('res/X.csv', 'w+', encoding='utf-8') as file:
@@ -46,7 +60,8 @@ def preprocess():
     with open('res/y_cesura.csv', 'w+', encoding='utf-8') as file:
         file.writelines(y_cesura_text)
 
-    text_no_tag = re.sub(r'(\[START] )|( \[END])|(\[S] )|(S)|(C)', '', y_text)
+    text_no_tag = re.sub(rf'(\[START] )|( \[END])|({SYL})|({SPACE})|({CESURA})', ' ', y_text)
+    text_no_tag = remove_useless_spaces(text_no_tag)
     create_vocabulary(text_no_tag)
 
 
@@ -57,84 +72,94 @@ def cesura(text, syl_text):
     for word in ['te', 'beati', 'qui', 'neque', 'labïa', 'gloria']:
         dictionary[f'’{word}'] = dictionary[f'‘{word}']
     text = re.sub(r'(\[START] )|( \[END])', '', text)
-    syl_text = re.sub(r'(\[START] S )|( \[END])', '', syl_text)
+    syl_text = re.sub(rf'(\[START]{SYL})|( \[END])', '', syl_text)
     lines = text.split('\n')
     syl_lines = syl_text.split('\n')
+    lines_wo_cesura = 0
     for i, (line, syl_line) in enumerate(zip(lines, syl_lines)):
         tonic_accents = []
         counter = 0
-        words = line.split(' ')
+        words = line.split(f'{SPACE}')
         for w in words:
             num_syl = dictionary[w][0][0][1]
             pos_accent = dictionary[w][0][0][2]
             tonic_accents += [False for _ in range(num_syl)]
             tonic_accents[pos_accent - 1] = True
-        syllables = syl_line.split('S')
-        syllables.remove('')
+        syllables = syl_line.split(f'{SYL}')
+        if '' in syllables:
+            syllables.remove('')
+        # Check if a sinalefe is present, then remove the right syllable(s)
         if len(syllables) != len(tonic_accents):
             for j, s in enumerate(syllables):
-                for _ in re.findall(r' .', s):
+                for _ in re.findall(rf'{SPACE}.', s):
                     del tonic_accents[j]
+
         # hendecasyllable a maiore, cesura maschile
-        elif tonic_accents[5] and syllables[5].endswith(' '):
-            line_w_cesura = 'S'.join(syllables[0:6]) + 'C' + 'S'.join(syllables[6:])
+        if tonic_accents[5] and syllables[5].endswith(f'{SPACE}'):
+            line_w_cesura = f'{SYL}'.join(syllables[0:6]) + f'{CESURA}' + f'{SYL}'.join(syllables[6:])
         # hendecasyllable a maiore, cesura femminile
-        elif tonic_accents[5] and syllables[6].endswith(' '):
-            line_w_cesura = 'S'.join(syllables[0:7]) + 'C' + 'S'.join(syllables[7:])
+        elif tonic_accents[5] and syllables[6].endswith(f'{SPACE}'):
+            line_w_cesura = f'{SYL}'.join(syllables[0:7]) + f'{CESURA}' + f'{SYL}'.join(syllables[7:])
         # hendecasyllable a minore, cesura maschile
-        elif tonic_accents[3] and syllables[3].endswith(' '):
-            line_w_cesura = 'S'.join(syllables[0:4]) + 'C' + 'S'.join(syllables[4:])
+        elif tonic_accents[3] and syllables[3].endswith(f'{SPACE}'):
+            line_w_cesura = f'{SYL}'.join(syllables[0:4]) + f'{CESURA}' + f'{SYL}'.join(syllables[4:])
         # hendecasyllable a minore, cesura femminile
-        elif tonic_accents[3] and syllables[4].endswith(' '):
-            line_w_cesura = 'S'.join(syllables[0:5]) + 'C' + 'S'.join(syllables[5:])
+        elif tonic_accents[3] and syllables[4].endswith(f'{SPACE}'):
+            line_w_cesura = f'{SYL}'.join(syllables[0:5]) + f'{CESURA}' + f'{SYL}'.join(syllables[5:])
         # cesura lirica
-        if tonic_accents[2] and tonic_accents[5] and syllables[3].endswith(' '):
-            line_w_cesura = 'S'.join(syllables[0:4]) + 'C' + 'S'.join(syllables[4:])
+        elif tonic_accents[2] and tonic_accents[5] and syllables[3].endswith(f'{SPACE}'):
+            line_w_cesura = f'{SYL}'.join(syllables[0:4]) + f'{CESURA}' + f'{SYL}'.join(syllables[4:])
         # hendecasyllable a maiore, cesura after a proparoxytone
-        elif tonic_accents[5] and syllables[7].endswith(' '):
-            line_w_cesura = 'S'.join(syllables[0:8]) + 'C' + 'S'.join(syllables[8:])
+        elif tonic_accents[5] and syllables[7].endswith(f'{SPACE}'):
+            line_w_cesura = f'{SYL}'.join(syllables[0:8]) + f'{CESURA}' + f'{SYL}'.join(syllables[8:])
         # hendecasyllable a minore, cesura after a proparoxytone
-        elif tonic_accents[3] and syllables[5].endswith(' '):
-            line_w_cesura = 'S'.join(syllables[0:6]) + 'C' + 'S'.join(syllables[6:])
+        elif tonic_accents[3] and syllables[5].endswith(f'{SPACE}'):
+            line_w_cesura = f'{SYL}'.join(syllables[0:6]) + f'{CESURA}' + f'{SYL}'.join(syllables[6:])
         # hendecasyllable a maiore with cesura femminile between two words joint by sinalefe
-        elif tonic_accents[5] and ' ' in syllables[6]:
-            line_w_cesura = 'S'.join(syllables[0:6]) + 'S' + \
-                            re.sub(r' (?=.)', r' C', syllables[6]) + \
-                            'S' + 'S'.join(syllables[7:])
+        elif tonic_accents[5] and f'{SPACE}' in syllables[6]:
+            line_w_cesura = f'{SYL}'.join(syllables[0:6]) + f'{SYL}' + \
+                            re.sub(rf'{SPACE}(?=.)', rf'{SPACE}{CESURA}', syllables[6]) + \
+                            f'{SYL}' + f'{SYL}'.join(syllables[7:])
         # hendecasyllable a minore with cesura femminile between two words joint by sinalefe
-        elif tonic_accents[3] and ' ' in syllables[4]:
-            line_w_cesura = 'S'.join(syllables[0:4]) + 'S' + \
-                            re.sub(r' (?=.)', r' C', syllables[4]) + \
-                            'S' + 'S'.join(syllables[5:])
+        elif tonic_accents[3] and f'{SPACE}' in syllables[4]:
+            line_w_cesura = f'{SYL}'.join(syllables[0:4]) + f'{SYL}' + \
+                            re.sub(rf'{SPACE}(?=.)', f'{SPACE}{CESURA}', syllables[4]) + \
+                            f'{SYL}' + f'{SYL}'.join(syllables[5:])
         # hendecasyllable a maiore with cesura after a proparoxytone and between two words joint by sinalefe
-        elif tonic_accents[5] and ' ' in syllables[7]:
-            line_w_cesura = 'S'.join(syllables[0:7]) + 'S' + \
-                            re.sub(r' (?=.)', r' C', syllables[7]) + \
-                            'S' + 'S'.join(syllables[8:])
+        elif tonic_accents[5] and f'{SPACE}' in syllables[7]:
+            line_w_cesura = f'{SYL}'.join(syllables[0:7]) + f'{SYL}' + \
+                            re.sub(rf'{SPACE}(?=.)', f'{SPACE}{CESURA}', syllables[7]) + \
+                            f'{SYL}' + f'{SYL}'.join(syllables[8:])
         # hendecasyllable a minore with cesura after a proparoxytone and between two words joint by sinalefe
-        elif tonic_accents[3] and ' ' in syllables[5]:
-            line_w_cesura = 'S'.join(syllables[0:5]) + 'S' + \
-                            re.sub(r' (?=.)', r' C', syllables[5]) + \
-                            'S' + 'S'.join(syllables[6:])
+        elif tonic_accents[3] and f'{SPACE}' in syllables[5]:
+            line_w_cesura = f'{SYL}'.join(syllables[0:5]) + f'{SYL}' + \
+                            re.sub(rf'{SPACE}(?=.)', f'{SPACE}{CESURA}', syllables[5]) + \
+                            f'{SYL}' + f'{SYL}'.join(syllables[6:])
         # There are 4 hendecasyllable a maiore where the cesura split a compound word which ends with -mente (3
         # cases) or -zial (1 case)
         elif 'mente ' == syllables[7] + syllables[8]:
-            line_w_cesura = 'S'.join(syllables[0:7]) + 'C' + 'S'.join(syllables[7:])
+            line_w_cesura = f'{SYL}'.join(syllables[0:7]) + f'{CESURA}' + f'{SYL}'.join(syllables[7:])
         elif 'zial ' == syllables[6] + syllables[7]:
-            line_w_cesura = 'S'.join(syllables[0:6]) + 'C' + 'S'.join(syllables[6:])
+            line_w_cesura = f'{SYL}'.join(syllables[0:6]) + f'{CESURA}' + f'{SYL}'.join(syllables[6:])
         # Remaining 7 verses are non-canonical hendecasyllables so they do not have a cesura
         else:
+            lines_wo_cesura += 1
             line_w_cesura = syl_line
         # remove eventual multiple spaces
-        line_w_cesura = re.sub(' +', ' ', line_w_cesura)
+        line_w_cesura = remove_useless_spaces(line_w_cesura)
         syl_lines[i] = line_w_cesura
+
+    if lines_wo_cesura != 7:
+        warnings.warn(
+            f'Warning! There are {lines_wo_cesura} lines without cesura, they should be only 7',
+            UserWarning)
     return '\n'.join(syl_lines)
 
 
 def create_vocabulary(text):
     y = tf.data.Dataset.from_tensor_slices(text.split('\n'))
     tokenizer_params = dict(lower_case=False)
-    reserved_tokens = ['[START]', '[END]', 'S', 'C', '##S', '##C']
+    reserved_tokens = ['[START]', '[END]', f'{SYL}'.strip(), f'{CESURA}'.strip(), f'{SPACE}'.strip()]
     vocab_args = dict(
         # The target vocabulary size
         vocab_size=200,
