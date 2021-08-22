@@ -180,3 +180,4 @@ class Decoder(tf.keras.layers.Layer):
 
         # x.shape == (batch_size, target_seq_len, d_model)
         return x, attention_weights
+

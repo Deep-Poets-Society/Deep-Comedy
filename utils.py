@@ -4,6 +4,7 @@ import tensorflow_text as text
 from sklearn.model_selection import train_test_split
 from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
 from tokenizer import Tokenizer
+from matplotlib import pyplot as plt
 
 
 def load_dataset():
@@ -101,11 +102,13 @@ def accuracy_function(real, pred):
     return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
 
 
+def plot_accuracy(train_losses, train_accuracies, val_losses, val_accuracies):
+    x = range(len(train_losses))
+    plt.figure(figsize=(10, 5))
+    plt.plot(x, train_accuracies, 'Train')
+    plt.plot(x, val_accuracies, 'Validation')
+    plt.show()
+
+
 if __name__ == '__main__':
-    ds = load_dataset()
-    train = ds['train']
-    val = ds['val']
-    train_batches = train.batch(64)
-    for batch, entries in enumerate(train_batches):
-        print(entries)
-        break
+    pass

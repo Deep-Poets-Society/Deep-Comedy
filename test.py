@@ -1,5 +1,5 @@
 from tokenizer import Tokenizer
-from utils import load_dataset
+from utils import load_dataset, choose_prediction
 
 
 def test_tokenizer():
