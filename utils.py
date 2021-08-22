@@ -103,12 +103,13 @@ def accuracy_function(real, pred):
 
 
 def plot_accuracy(train_losses, train_accuracies, val_losses, val_accuracies):
-    x = range(len(train_losses))
-    plt.figure(figsize=(10, 5))
-    plt.plot(x, train_accuracies, 'Train')
-    plt.plot(x, val_accuracies, 'Validation')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15,5))
+    ax1.set_title('Accuracy')
+    ax1.set(xlabel='Epoch')
+    ax1.plot(train_accuracies, label='Train')
+    ax1.plot(val_accuracies, label='Validation')
+    ax2.set_title('Loss')
+    ax2.set(xlabel='Epoch')
+    ax2.plot(train_losses, label='Train')
+    ax2.plot(val_losses, label='Validation')
     plt.show()
-
-
-if __name__ == '__main__':
-    pass
