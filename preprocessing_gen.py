@@ -3,6 +3,7 @@ import string
 from preprocessing import remove_useless_spaces, CESURA, SPACE, SYL
 
 TRIPLET = "T"
+NEW_LINE = 'N'
 
 
 def preprocess():
@@ -36,6 +37,9 @@ def preprocess():
     processed_text = re.sub(rf'^{TRIPLET}\n', '', processed_text)
     # add a space before triplet tag:
     processed_text = re.sub(f'{TRIPLET}', f' {TRIPLET}', processed_text)
+    # add new line token
+    processed_text = re.sub(r'\n', f' {NEW_LINE}\n', processed_text)
+    processed_text = re.sub(rf'{TRIPLET} {NEW_LINE}', f'{TRIPLET}', processed_text)
     # save file
     with open('res/X_gen.csv', 'w+', encoding='utf-8') as file:
         file.writelines(processed_text)
