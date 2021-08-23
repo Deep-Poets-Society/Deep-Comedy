@@ -28,6 +28,7 @@ def cleanup_text(reserved_tokens, token_txt):
     result = tf.strings.regex_replace(result, 'C', '$')
     result = tf.strings.regex_replace(result, 'Y', '|')
     result = tf.strings.regex_replace(result, 'S', ' ')
+    result = tf.strings.regex_replace(result, 'N', '\n')
 
     return result
 
