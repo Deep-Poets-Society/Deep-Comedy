@@ -5,6 +5,17 @@ from sklearn.model_selection import train_test_split
 from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
 from tokenizer import Tokenizer
 from matplotlib import pyplot as plt
+from preprocessing_gen import TRIPLET
+
+
+def _train_val_test_split(X, y, random_state):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, random_state=random_state)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.02, random_state=random_state)
+    train = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+    val = tf.data.Dataset.from_tensor_slices((X_val, y_val))
+    test = tf.data.Dataset.from_tensor_slices((X_test, y_test))
+    dataset = {'train': train, 'val': val, 'test': test}
+    return dataset
 
 
 def load_dataset():
@@ -12,14 +23,17 @@ def load_dataset():
         X = file.readlines()
     with open('res/y_cesura.csv', 'r+', encoding='utf-8') as file:
         y = file.readlines()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.02, random_state=42)
-    train = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-    val = tf.data.Dataset.from_tensor_slices((X_val, y_val))
-    test = tf.data.Dataset.from_tensor_slices((X_test, y_test))
-    dataset = {'train': train, 'val': val, 'test': test}
-    return dataset
+    return _train_val_test_split(X, y, random_state=42)
 
+
+def load_dataset_for_gen():
+    with open('res/X_gen.csv', 'r+', encoding='utf-8') as file:
+        text = file.readlines()
+    text = ''.join(text)
+    triplets = text.split(f'{TRIPLET}')
+    X = triplets[:-1]
+    y = triplets[1:]
+    return  _train_val_test_split(X, y, random_state=42)
 
 def get_angles(pos, _2i, d_model):
     # 2* _2i//2 returns 2i in both cases the arg is 2i or 2i+1
@@ -108,8 +122,17 @@ def plot_accuracy(train_losses, train_accuracies, val_losses, val_accuracies):
     ax1.set(xlabel='Epoch')
     ax1.plot(train_accuracies, label='Train')
     ax1.plot(val_accuracies, label='Validation')
+    start, end = ax1.get_xlim()
+    ax1.set_xticks(np.arange(start, end, 1))
+
     ax2.set_title('Loss')
     ax2.set(xlabel='Epoch')
     ax2.plot(train_losses, label='Train')
     ax2.plot(val_losses, label='Validation')
+    start, end = ax2.get_xlim()
+    ax2.set_xticks(np.arange(start, end, 1))
     plt.show()
+
+
+if __name__ == '__main__':
+    load_dataset_for_gen()

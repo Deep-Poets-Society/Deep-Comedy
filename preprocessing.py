@@ -60,6 +60,7 @@ def preprocess():
     with open('res/y_cesura.csv', 'w+', encoding='utf-8') as file:
         file.writelines(y_cesura_text)
 
+
     text_no_tag = re.sub(rf'(\[START] )|( \[END])|({SYL})|({SPACE})|({CESURA})', ' ', y_text)
     text_no_tag = remove_useless_spaces(text_no_tag)
     create_vocabulary(text_no_tag)
