@@ -1,7 +1,9 @@
 [START]
 [END]
-N
+Y
+C
 S
+N
 a
 b
 c
