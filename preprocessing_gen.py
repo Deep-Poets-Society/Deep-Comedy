@@ -3,7 +3,7 @@ import string
 from preprocessing import remove_useless_spaces, CESURA, SPACE, SYL
 
 TRIPLET = "T"
-NEW_LINE = 'N'
+NEW_LINE = "N"
 
 
 def preprocess():
@@ -19,6 +19,7 @@ def preprocess():
     processed_text = re.sub(r'.* • canto .*', '', processed_text)
     # remove lines' numbers
     processed_text = re.sub(r'\n *\d* ', '\n', processed_text)
+
     # add triplet token
     processed_text = re.sub(r'\n\n', f'{TRIPLET}\n', processed_text)
     # remove multiple blank lines
@@ -27,10 +28,16 @@ def preprocess():
     processed_text = re.sub(r'(^\n)|(\n$)', '', processed_text)
     # remove multiple spaces and transform spaces in space tag
     processed_text = re.sub(r' +', f'{SPACE}', processed_text)
+
+
+    processed_text = re.sub(r'\|', f'{SYL}', processed_text)
+
+
     # remove space tag if after triplet tag
     processed_text = re.sub(rf'{TRIPLET}{SPACE}', f'{TRIPLET}', processed_text)
     # remove syllabification
     processed_text = re.sub(r'\|', '', processed_text)
+
     # remove empty lines with triplet tag
     processed_text = re.sub(rf'\n{TRIPLET}\n{TRIPLET}\n', '\n', processed_text)
     # remove triplet tag at the beginning
