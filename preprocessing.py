@@ -216,7 +216,7 @@ def generate_gen_files(text):
     processed_text = re.sub(r'\n', f' {NEW_LINE}\n', processed_text)
     processed_text = re.sub(rf'{TRIPLET} {NEW_LINE}', f'{TRIPLET}', processed_text)
     # remove syllabification
-    x_text = re.sub(r'\|', f'{SYL}', processed_text)
+    x_text = re.sub(r'\|', '', processed_text)
 
     # add cesura
     with open('res/y_cesura.csv', 'r+', encoding='utf-8') as file:

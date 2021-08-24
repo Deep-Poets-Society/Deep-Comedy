@@ -6,6 +6,7 @@ from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as ber
 from tokenizer import Tokenizer
 from matplotlib import pyplot as plt
 from preprocessing import TRIPLET
+import re
 
 
 def _train_val_test_split(X, y, random_state):
@@ -28,12 +29,18 @@ def load_dataset():
 
 def load_dataset_for_gen():
     with open('res/X_gen.csv', 'r+', encoding='utf-8') as file:
-        text = file.readlines()
-    text = ''.join(text)
-    triplets = text.split(f'{TRIPLET}')
-    X = triplets[:-1]
-    y = triplets[1:]
-    return  _train_val_test_split(X, y, random_state=42)
+        x_text = file.readlines()
+    x_text = ''.join(x_text)
+    x_text = re.sub(r'\n', ' ', x_text)
+    x_triplets = x_text.split(f'{TRIPLET}')
+    X = x_triplets[:-1]
+    with open('res/y_gen.csv', 'r+', encoding='utf-8') as file:
+        y_text = file.readlines()
+    y_text = ''.join(y_text)
+    y_text = re.sub(r'\n', '', y_text)
+    y_triplets = y_text.split(f'{TRIPLET}')
+    y = y_triplets[1:]
+    return _train_val_test_split(X, y, random_state=42)
 
 def get_angles(pos, _2i, d_model):
     # 2* _2i//2 returns 2i in both cases the arg is 2i or 2i+1
@@ -135,4 +142,9 @@ def plot_accuracy(train_losses, train_accuracies, val_losses, val_accuracies):
 
 
 if __name__ == '__main__':
-    load_dataset_for_gen()
+    dataset = load_dataset_for_gen()
+    train = dataset['train']
+    for entries in train.batch(1):
+        print(entries[0][0].numpy())
+        print(entries[1][0].numpy())
+        break
