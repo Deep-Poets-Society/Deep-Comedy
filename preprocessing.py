@@ -8,6 +8,8 @@ from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as ber
 CESURA = " C "
 SPACE = " S "
 SYL = " Y "
+TRIPLET = "T"
+NEW_LINE = "N"
 
 
 def remove_useless_spaces(text):
@@ -33,37 +35,9 @@ def preprocess():
     processed_text = re.sub(r'.* • canto .*', '', processed_text)
     # remove lines' numbers
     processed_text = re.sub(r'\n *\d* ', '\n', processed_text)
-    # remove multiple blank lines
-    processed_text = re.sub(r'\n+', '\n', processed_text)
-    # remove initial and last blank lines
-    processed_text = re.sub(r'(^\n)|(\n$)', '', processed_text)
-    # remove multiple spaces and transform spaces in space tag
-    processed_text = re.sub(r' +', f'{SPACE}', processed_text)
 
-    # add syllable token in y.csv, remove syllabification in X.csv
-    x_text = re.sub(r'\|', '', processed_text)
-    y_text = re.sub(r'\|', f'{SYL}', processed_text)
-    # remove spaces at the beginning of each line in y.csv
-    y_text = re.sub(r'^ ', '', y_text)
-    # generate y_cesura.csv
-    y_cesura_text = cesura(x_text, y_text)
-    # re-add syllable tag the beginning of the first syllable of each line
-    y_cesura_text = re.sub(r'\n', f'\n{SYL}', y_cesura_text)
-    # add an initial space which is lost in the process:
-    y_cesura_text = ' ' + y_cesura_text
-
-    # save files
-    with open('res/X.csv', 'w+', encoding='utf-8') as file:
-        file.writelines(x_text)
-    with open('res/y.csv', 'w+', encoding='utf-8') as file:
-        file.writelines(y_text)
-    with open('res/y_cesura.csv', 'w+', encoding='utf-8') as file:
-        file.writelines(y_cesura_text)
-
-
-    text_no_tag = re.sub(rf'(\[START] )|( \[END])|({SYL})|({SPACE})|({CESURA})', ' ', y_text)
-    text_no_tag = remove_useless_spaces(text_no_tag)
-    create_vocabulary(text_no_tag)
+    generate_syl_files(processed_text)
+    generate_gen_files(processed_text)
 
 
 def cesura(text, syl_text):
@@ -87,7 +61,6 @@ def cesura(text, syl_text):
     lines_wo_cesura = 0
     for i, (line, syl_line) in enumerate(zip(lines, syl_lines)):
         tonic_accents = []
-        counter = 0
         words = line.split(f'{SPACE}')
         for w in words:
             num_syl = dictionary[w][0][0][1]
@@ -187,6 +160,78 @@ def create_vocabulary(text):
     with open('res/vocab.txt', 'w', encoding='utf-8') as f:
         for token in vocab:
             print(token, file=f)
+
+
+def generate_syl_files(text):
+    # remove multiple blank lines
+    processed_text = re.sub(r'\n+', '\n', text)
+    # remove initial and last blank lines
+    processed_text = re.sub(r'(^\n)|(\n$)', '', processed_text)
+    # remove multiple spaces and transform spaces in space tag
+    processed_text = re.sub(r' +', f'{SPACE}', processed_text)
+    # add syllable token in y.csv, remove syllabification in X.csv
+    x_text = re.sub(r'\|', '', processed_text)
+    y_text = re.sub(r'\|', f'{SYL}', processed_text)
+    # remove spaces at the beginning of each line in y.csv
+    y_text = re.sub(r'^ ', '', y_text)
+    # generate y_cesura.csv
+    y_cesura_text = cesura(x_text, y_text)
+    # re-add syllable tag the beginning of the first syllable of each line
+    y_cesura_text = re.sub(r'\n', f'\n{SYL}', y_cesura_text)
+    # add an initial space which is lost in the process:
+    y_cesura_text = ' ' + y_cesura_text
+
+    # save files
+    with open('res/X.csv', 'w+', encoding='utf-8') as file:
+        file.writelines(x_text)
+    with open('res/y.csv', 'w+', encoding='utf-8') as file:
+        file.writelines(y_text)
+    with open('res/y_cesura.csv', 'w+', encoding='utf-8') as file:
+        file.writelines(y_cesura_text)
+
+    # noinspection RegExpDuplicateAlternationBranch
+    text_no_tag = re.sub(rf'(\[START] )|( \[END])|({SYL})|({SPACE})|({CESURA})', ' ', y_text)
+    text_no_tag = remove_useless_spaces(text_no_tag)
+    create_vocabulary(text_no_tag)
+
+
+def generate_gen_files(text):
+    # add triplet token
+    processed_text = re.sub(r'\n\n', f'{TRIPLET}\n', text)
+    # remove multiple blank lines
+    processed_text = re.sub(r'\n+', '\n', processed_text)
+    # remove initial and last blank lines
+    processed_text = re.sub(r'(^\n)|(\n$)', '', processed_text)
+    # remove multiple spaces and transform spaces in space tag
+    processed_text = re.sub(r' +', f'{SPACE}', processed_text)
+    # remove space tag if after triplet tag
+    processed_text = re.sub(rf'{TRIPLET}{SPACE}', f'{TRIPLET}', processed_text)
+    # remove empty lines with triplet tag
+    processed_text = re.sub(rf'\n{TRIPLET}\n{TRIPLET}\n', '\n', processed_text)
+    # remove triplet tag at the beginning
+    processed_text = re.sub(rf'^{TRIPLET}\n', '', processed_text)
+    # add a space before triplet tag:
+    processed_text = re.sub(f'{TRIPLET}', f' {TRIPLET}', processed_text)
+    # add new line token
+    processed_text = re.sub(r'\n', f' {NEW_LINE}\n', processed_text)
+    processed_text = re.sub(rf'{TRIPLET} {NEW_LINE}', f'{TRIPLET}', processed_text)
+    # remove syllabification
+    x_text = re.sub(r'\|', f'{SYL}', processed_text)
+
+    # add cesura
+    with open('res/y_cesura.csv', 'r+', encoding='utf-8') as file:
+        lines_w_cesura = file.readlines()
+    lines_w_triplet = x_text.split('\n')
+    for i, line in enumerate(lines_w_cesura):
+        last_token = lines_w_triplet[i][-1]
+        lines_w_cesura[i] = line[:-1] + f' {last_token}'
+    y_cesura_text = '\n'.join(lines_w_cesura)
+
+    # save files
+    with open('res/X_gen.csv', 'w+', encoding='utf-8') as file:
+        file.writelines(x_text)
+    with open('res/y_gen.csv', 'w+', encoding='utf-8') as file:
+        file.writelines(y_cesura_text)
 
 
 if __name__ == '__main__':

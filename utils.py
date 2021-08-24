@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
 from tokenizer import Tokenizer
 from matplotlib import pyplot as plt
-from preprocessing_gen import TRIPLET
+from preprocessing import TRIPLET
 
 
 def _train_val_test_split(X, y, random_state):
