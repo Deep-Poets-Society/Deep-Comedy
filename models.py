@@ -48,6 +48,5 @@ class Transformer(tf.keras.Model, ABC):
             tar, enc_output, training, look_ahead_mask, dec_padding_mask)
 
         final_output = self.final_layer(dec_output)  # (batch_size, tar_seq_len, target_vocab_size)
-        final_output = tf.nn.softmax(final_output, axis=-1)
 
         return final_output, attention_weights
