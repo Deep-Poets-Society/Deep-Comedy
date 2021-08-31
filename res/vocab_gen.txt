@@ -4,6 +4,8 @@ Y
 C
 S
 N
+R
+W
 a
 b
 c
