@@ -10,6 +10,8 @@ SPACE = " S "
 SYL = " Y "
 TRIPLET = "T"
 NEW_LINE = "N"
+RHYME = "R"
+RHYME_WITH = "W"
 
 
 def remove_useless_spaces(text):
@@ -192,7 +194,12 @@ def generate_syl_files(text):
     # noinspection RegExpDuplicateAlternationBranch
     text_no_tag = re.sub(rf'(\[START] )|( \[END])|({SYL})|({SPACE})|({CESURA})', ' ', y_text)
     text_no_tag = remove_useless_spaces(text_no_tag)
-    create_vocabulary(text_no_tag)
+    #create_vocabulary(text_no_tag)
+
+#def generate_rhyme(text):
+    #add rhime of the second verse of the triplet
+    #processed_text = re.sub(f'{SYL}{SPACE}[a-z]*{SPACE}{NEW_LINE}', f'{SYL}{SPACE}{RHYME_WITH}[a-z]*{SPACE}{NEW_LINE}', text)
+    #add rhyme of the first and the last verse of the triplet
 
 
 def generate_gen_files(text):
@@ -215,6 +222,7 @@ def generate_gen_files(text):
     # add new line token
     processed_text = re.sub(r'\n', f' {NEW_LINE}\n', processed_text)
     processed_text = re.sub(rf'{TRIPLET} {NEW_LINE}', f'{TRIPLET}', processed_text)
+
     # remove syllabification
     x_text = re.sub(r'\|', '', processed_text)
 
@@ -227,12 +235,26 @@ def generate_gen_files(text):
         lines_w_cesura[i] = line[:-1] + f' {last_token}'
     y_cesura_text = '\n'.join(lines_w_cesura)
 
+    # add rhyme of the second verse of the triplet
+    y_cesura_text = re.sub(f'([a-z]*) {NEW_LINE}', rf'{RHYME_WITH} \1 {NEW_LINE} ', y_cesura_text)
+    # add rhyme of the last verse of the triplet
+    y_cesura_text = re.sub(f'([a-z]*) {TRIPLET}', rf'{RHYME} \1 {TRIPLET} ', y_cesura_text)
+
+    count_verse = -1
+    y_rhyme_text = []
+    for line in y_cesura_text.splitlines():
+        if "W" in line:
+            count_verse += 1
+            if count_verse % 2 == 0:
+                line = re.sub(f'{RHYME_WITH}', f'{RHYME}', line)
+        y_rhyme_text.append(line)
+        y_rhyme_text.append("\n")
+
     # save files
     with open('res/X_gen.csv', 'w+', encoding='utf-8') as file:
         file.writelines(x_text)
     with open('res/y_gen.csv', 'w+', encoding='utf-8') as file:
-        file.writelines(y_cesura_text)
-
+        file.writelines(y_rhyme_text)
 
 if __name__ == '__main__':
     preprocess()
