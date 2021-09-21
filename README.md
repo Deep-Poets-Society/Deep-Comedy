@@ -1,5 +1,7 @@
 # Deep-Comedy
 
+Syllabification of italian hendecasyllables and generation of new text in Dante's style with two transformers trained on Divina Comedia
+
 ## Syllabification of text [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Deep-Poets-Society/Deep-Comedy/blob/main/syllabification.ipynb)
 
 ```
