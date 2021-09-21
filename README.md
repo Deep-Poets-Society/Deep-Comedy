@@ -42,3 +42,5 @@ seed:
 |ri|tro|ve|rai |co|me a $quel|l’ uom |ti|ra
 |co|me an|cor |ti |sa|reb|be in $ma|ra|vi|glia
 ```
+
+Checkpoints are stored on a [Gitlab repository](https://gitlab.com/sasso-effe/deep-comedy-checkpoints) since they are too big for GitHub.
