@@ -108,6 +108,12 @@ def loss_function(real, pred):
 
     mask = tf.cast(mask, dtype=loss_.dtype)
     loss_ *= mask
+    
+    # giving more weight to [END]
+    end_mask = tf.math.equal(pred, 1)
+    end_mask = tf.where(end_mask, 2.0, 1.0)
+    end_mask = tf.cast(end_mask, dtype=loss_.dtype)
+    loss_ *= end_mask
 
     return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
